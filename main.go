@@ -1,28 +1,36 @@
 package main
 
 import (
-	"fmt"
+	_ "fmt"
 	"os"
 	"os/exec"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	// read config file
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.WarnLevel)
+	runDockerCompose()
+}
 
-	program := "docker-compose"
+func runDockerCompose() {
+	compose := "docker-compose"
 
-	if cmdExists(program) {
-		os.Setenv("FOO", "TESTING_ENV")
+	if cmdExists(compose) {
+		setEnvs()
 
-		cmd := exec.Command(program, os.Args[1:]...)
+		cmd := exec.Command(compose, os.Args[1:]...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+
 		err := cmd.Run()
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			log.WithFields(log.Fields{"Message": err}).Warn("Error while running docker-compose")
 		}
 	}
-
 }
 
 func cmdExists(cmd string) bool {
@@ -31,4 +39,8 @@ func cmdExists(cmd string) bool {
 		return true
 	}
 	return false
+}
+
+func setEnvs() {
+	os.Setenv("FOO", "TESTING_ENV")
 }
