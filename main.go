@@ -70,6 +70,15 @@ func runDockerCompose() {
 	}
 }
 
+func ocWhoAmI() string {
+	args := [3]string{"oc", "whoami", "-t"}
+	out, err := exec.Command(args[0], args[1:3]...).Output()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+	return string(out)
+}
+
 func cmdExists(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	if err == nil {
