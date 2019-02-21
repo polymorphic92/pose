@@ -1,23 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
+
+var envMap = make(map[string]string)
 
 func main() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.WarnLevel)
 
 	readConfigFile()
-	setEnvs()
+	setEnvs(envMap)
 	runDockerCompose()
 
 }
@@ -39,30 +39,33 @@ func readConfigFile() {
 		panic(err) // instead of error create config in $USER home dir
 	}
 
-	var config Config
+	var config map[string]interface{}
+
 	err = yaml.Unmarshal(dat, &config)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf(spew.Sdump(config))
+	for key, value := range config {
+		envMap[key] = value.(string)
+	}
 
 }
 
-func setEnvs() {
-	os.Setenv("FOO", "TESTING_ENV")
+func setEnvs(m map[string]string) {
+	for key, value := range m {
+		os.Setenv(key, value)
+	}
+
 }
 
 func runDockerCompose() {
 	compose := "docker-compose"
 
 	if cmdExists(compose) {
-		// setEnvs()
-
 		cmd := exec.Command(compose, os.Args[1:]...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-
 		err := cmd.Run()
 		if err != nil {
 			log.WithFields(log.Fields{"Message": err}).Warn("Error while running docker-compose")
