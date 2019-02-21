@@ -66,10 +66,7 @@ func runDockerCompose() {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		err := cmd.Run()
-		if err != nil {
-			log.WithFields(log.Fields{"Message": err}).Warn("Error while running docker-compose")
-		}
+		cmd.Run()
 	}
 }
 
