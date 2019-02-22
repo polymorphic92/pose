@@ -32,13 +32,14 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.WarnLevel)
 
-	readConfigFile()
+	var currentProject = readConfigFile()
+	addInLineENVs(currentProject)
 	setEnvs(envMap)
 	runDockerCompose()
 
 }
 
-func readConfigFile() {
+func readConfigFile() workProject {
 
 	dat, err := ioutil.ReadFile(os.Getenv("HOME") + "/pose-config.yml")
 	if err != nil {
@@ -59,11 +60,14 @@ func readConfigFile() {
 		panic(err)
 	}
 
-	// fmt.Println(config)
-	for key, value := range config.Projects[projecBasetPath].Inline {
+	return config.Projects[projecBasetPath]
+
+}
+
+func addInLineENVs(project workProject) {
+	for key, value := range project.Inline {
 		envMap[key] = value
 	}
-
 }
 
 func setEnvs(m map[string]string) {
