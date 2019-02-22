@@ -1,0 +1,12 @@
+projects:  
+  projectPath:
+    inline:
+      FOO: BAR
+    openshift:
+      - clusterURL:   https:/foo.bar
+        project:      Foobar
+        secretEnvMapping:
+          secret:
+            USERNAME: username  # ENV : part-of-secert
+            PASSWORD: password 
+
