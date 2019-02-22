@@ -5,6 +5,7 @@ services:
     image: busybox
     environment:
       Foo: $FOO
+      Bar: $BAR
     command: "printenv"
   build:
     image: golang
