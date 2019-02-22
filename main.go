@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 
@@ -11,6 +12,21 @@ import (
 )
 
 var envMap = make(map[string]string)
+
+type openshiftBackend struct {
+	clusterURL       string
+	project          string
+	secretEnvMapping map[string]map[string]string
+}
+
+type workProject struct {
+	Inline    map[string]string
+	Openshift []openshiftBackend
+}
+
+type poseConfig struct {
+	Projects map[string]workProject
+}
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -24,35 +40,36 @@ func main() {
 
 func readConfigFile() {
 
-	type Config struct {
-		Foo string
-		Bar []string
-		Baz struct {
-			Test1 string
-			Test2 string
-			Test3 string
-		}
-	}
-
 	dat, err := ioutil.ReadFile(os.Getenv("HOME") + "/pose-config.yml")
 	if err != nil {
 		panic(err) // instead of error create config in $USER home dir
 	}
 
-	var config map[string]interface{}
+	projectPath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	projecBasetPath := filepath.Base(projectPath)
+	// fmt.Println(projecBasetPath)
+
+	var config poseConfig
 
 	err = yaml.Unmarshal(dat, &config)
 	if err != nil {
 		panic(err)
 	}
-	for key, value := range config {
-		envMap[key] = value.(string)
+
+	// fmt.Println(config)
+	for key, value := range config.Projects[projecBasetPath].Inline {
+		envMap[key] = value
 	}
 
 }
 
 func setEnvs(m map[string]string) {
 	for key, value := range m {
+
+		// fmt.Println("KEY: " + key + " VALUE: " + value)
 		os.Setenv(key, value)
 	}
 
