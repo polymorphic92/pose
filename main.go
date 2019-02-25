@@ -57,8 +57,15 @@ func main() {
 	log.SetLevel(log.WarnLevel)
 
 	var currentProject = readConfigFile()
-	addInLineMapping(currentProject)
-	addOpenshiftMapping(currentProject)
+
+	if inlineMap := currentProject.Inline; inlineMap != nil {
+		addInLineMapping(inlineMap)
+	}
+
+	if openshiftBackends := currentProject.Openshift; openshiftBackends != nil {
+		addOpenshiftMapping(openshiftBackends)
+	}
+
 	setEnvs(envMap)
 	runDockerCompose()
 
@@ -88,15 +95,15 @@ func readConfigFile() workProject {
 
 }
 
-func addInLineMapping(project workProject) {
-	for key, value := range project.Inline {
+func addInLineMapping(inlineMap map[string]string) {
+	for key, value := range inlineMap {
 		envMap[key] = value
 	}
 }
 
-func addOpenshiftMapping(project workProject) {
+func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 	var token = ocWhoAmI()
-	for _, openshiftObj := range project.Openshift {
+	for _, openshiftObj := range openshiftArr {
 
 		var clusterEndpoint = openshiftObj.Endpoint +
 			"/api/v1/namespaces/" +
@@ -141,8 +148,6 @@ func addOpenshiftMapping(project workProject) {
 
 func setEnvs(m map[string]string) {
 	for key, value := range m {
-
-		// fmt.Println("KEY: " + key + " VALUE: " + value)
 		os.Setenv(key, value)
 	}
 
