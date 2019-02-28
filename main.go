@@ -78,10 +78,11 @@ func readConfigFile() workProject {
 		panic(err) // instead of error create config in $USER home dir
 	}
 
-	projectPath, err := os.Executable()
+	projectPath, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+
 	projecBasetPath := filepath.Base(projectPath)
 
 	var config poseConfig
@@ -90,7 +91,6 @@ func readConfigFile() workProject {
 	if err != nil {
 		panic(err)
 	}
-
 	return config.Projects[projecBasetPath]
 
 }
