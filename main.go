@@ -102,7 +102,7 @@ func addInLineMapping(inlineMap map[string]string) {
 }
 
 func addOpenshiftMapping(openshiftArr []openshiftBackend) {
-	var token = ocWhoAmI()
+	var token = getOpenshiftToken()
 	for _, openshiftObj := range openshiftArr {
 
 		var clusterEndpoint = openshiftObj.Endpoint +
@@ -165,7 +165,7 @@ func runDockerCompose() {
 	}
 }
 
-func ocWhoAmI() string {
+func getOpenshiftToken() string {
 	args := [3]string{"oc", "whoami", "-t"}
 	out, err := exec.Command(args[0], args[1:3]...).Output()
 	if err != nil {
