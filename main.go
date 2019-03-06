@@ -22,9 +22,9 @@ var envMap = make(map[string]string)
 //
 
 type openshiftBackend struct {
-	Endpoint string
-	Project  string
-	Mapping  map[string]map[string]string
+	Endpoint  string
+	Namespace string
+	Mapping   map[string]map[string]string
 }
 
 type workProject struct {
@@ -107,7 +107,7 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 
 		var clusterEndpoint = openshiftObj.Endpoint +
 			"/api/v1/namespaces/" +
-			openshiftObj.Project +
+			openshiftObj.Namespace +
 			"/secrets?fieldSelector=type=Opaque"
 
 		openshiftClient := http.Client{}

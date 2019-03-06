@@ -4,8 +4,8 @@ projects:
       FOO: BAR
     openshift:
       - clusterURL:   https:/foo.bar
-        project:      Foobar
-        secretEnvMapping:
+        namespace:    Foobar
+        mapping:
           secret:
             USERNAME: username  # ENV : part-of-secert
             PASSWORD: password 
