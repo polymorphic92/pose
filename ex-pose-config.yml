@@ -5,6 +5,8 @@ projects:
     openshift:
       - clusterURL:   https:/foo.bar
         namespace:    Foobar
+        fieldselector:
+          type: Opaque
         mapping:
           secret:
             USERNAME: username  # ENV : part-of-secert

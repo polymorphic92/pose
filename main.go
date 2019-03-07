@@ -22,9 +22,10 @@ var envMap = make(map[string]string)
 //
 
 type openshiftBackend struct {
-	Endpoint  string
-	Namespace string
-	Mapping   map[string]map[string]string
+	Endpoint      string
+	Namespace     string
+	Fieldselector map[string]string
+	Mapping       map[string]map[string]string
 }
 
 type workProject struct {
@@ -105,20 +106,8 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 	var token = getOpenshiftToken()
 	for _, openshiftObj := range openshiftArr {
 
-		var clusterEndpoint = openshiftObj.Endpoint +
-			"/api/v1/namespaces/" +
-			openshiftObj.Namespace +
-			"/secrets?fieldSelector=type=Opaque"
-
 		openshiftClient := http.Client{}
-		secertObj := openshiftSecert{}
-
-		req, err := http.NewRequest(http.MethodGet, clusterEndpoint, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		req.Header.Set("Authorization", "Bearer "+token)
+		var req = buildOpenshiftRequest(openshiftObj, token)
 		res, getErr := openshiftClient.Do(req)
 		if getErr != nil {
 			log.Fatal(getErr)
@@ -128,6 +117,8 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 		if readErr != nil {
 			log.Fatal(readErr)
 		}
+
+		secertObj := openshiftSecert{}
 
 		jsonErr := json.Unmarshal(body, &secertObj)
 		if jsonErr != nil {
@@ -144,6 +135,32 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 		}
 
 	}
+}
+
+func buildOpenshiftRequest(openshiftObj openshiftBackend, token string) *http.Request {
+
+	var requestURL strings.Builder
+
+	requestURL.WriteString("https://" + openshiftObj.Endpoint)
+	requestURL.WriteString("/api/v1/namespaces/" + openshiftObj.Namespace + "/secrets")
+
+	var fSelectors strings.Builder
+
+	for field, fieldValue := range openshiftObj.Fieldselector {
+		fSelectors.WriteString(field + "=" + fieldValue)
+	}
+
+	if len(fSelectors.String()) > 0 {
+		requestURL.WriteString("?fieldSelector=" + fSelectors.String())
+	}
+
+	req, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	return req
 }
 
 func setEnvs(m map[string]string) {
@@ -169,7 +186,7 @@ func getOpenshiftToken() string {
 	args := [3]string{"oc", "whoami", "-t"}
 	out, err := exec.Command(args[0], args[1:3]...).Output()
 	if err != nil {
-		log.Fatalf("cmd.Run() failed with %s\n", err)
+		log.Fatalf("cmd.Run() failed with %s\n", err) // need to  show real error message
 	}
 	return strings.TrimSuffix(string(out), "\n")
 }
