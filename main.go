@@ -106,26 +106,10 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 	var token = getOpenshiftToken()
 	for _, openshiftObj := range openshiftArr {
 
-		openshiftClient := http.Client{}
 		var req = buildOpenshiftRequest(openshiftObj, token)
-		res, getErr := openshiftClient.Do(req)
-		if getErr != nil {
-			log.Fatal(getErr)
-		}
+		var secertsObj = getOpenshiftSecert(req)
 
-		body, readErr := ioutil.ReadAll(res.Body)
-		if readErr != nil {
-			log.Fatal(readErr)
-		}
-
-		secertObj := openshiftSecert{}
-
-		jsonErr := json.Unmarshal(body, &secertObj)
-		if jsonErr != nil {
-			log.Fatal(jsonErr)
-		}
-
-		for _, item := range secertObj.Items {
+		for _, item := range secertsObj.Items {
 			var secretMap = openshiftObj.Mapping[item.Metadata.Name]
 			if secretMap != nil {
 				for envName, secretPart := range secretMap {
@@ -135,6 +119,30 @@ func addOpenshiftMapping(openshiftArr []openshiftBackend) {
 		}
 
 	}
+}
+
+func getOpenshiftSecert(req *http.Request) openshiftSecert {
+
+	openshiftClient := http.Client{}
+
+	res, getErr := openshiftClient.Do(req)
+	if getErr != nil {
+		log.Fatal(getErr)
+	}
+
+	body, readErr := ioutil.ReadAll(res.Body)
+	if readErr != nil {
+		log.Fatal(readErr)
+	}
+
+	secertsObj := openshiftSecert{}
+
+	jsonErr := json.Unmarshal(body, &secertsObj)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+
+	return secertsObj
 }
 
 func buildOpenshiftRequest(openshiftObj openshiftBackend, token string) *http.Request {
