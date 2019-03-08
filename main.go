@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -50,6 +51,16 @@ type openshiftSecert struct {
 	}
 }
 
+//
+// openshift config aka ~/.kube/config
+//
+type openshiftConfig struct {
+	Users []struct {
+		Name string
+		User map[string]string
+	}
+}
+
 //###############################################
 //###############################################
 
@@ -58,13 +69,14 @@ func main() {
 	log.SetLevel(log.WarnLevel)
 
 	var currentProject = readConfigFile()
-
-	if inlineMap := currentProject.Inline; inlineMap != nil {
-		addInLineMapping(inlineMap)
-	}
-
-	if openshiftBackends := currentProject.Openshift; openshiftBackends != nil {
-		addOpenshiftMapping(openshiftBackends)
+	fields := reflect.TypeOf(readConfigFile())
+	for i := 0; i < fields.NumField(); i++ {
+		switch fields.Field(i).Name {
+		case "Inline":
+			addInLineMapping(currentProject.Inline)
+		case "Openshift":
+			addOpenshiftMapping(currentProject.Openshift)
+		}
 	}
 
 	setEnvs(envMap)
@@ -103,9 +115,10 @@ func addInLineMapping(inlineMap map[string]string) {
 }
 
 func addOpenshiftMapping(openshiftArr []openshiftBackend) {
-	var token = getOpenshiftToken()
-	for _, openshiftObj := range openshiftArr {
+	var osConfig = getOpenshiftConfig()
 
+	for _, openshiftObj := range openshiftArr {
+		var token = getOpenshiftToken(osConfig, strings.Split(openshiftObj.Endpoint, ".")[0])
 		var req = buildOpenshiftRequest(openshiftObj, token)
 		var secertsObj = getOpenshiftSecert(req)
 
@@ -149,7 +162,7 @@ func buildOpenshiftRequest(openshiftObj openshiftBackend, token string) *http.Re
 
 	var requestURL strings.Builder
 
-	requestURL.WriteString("https://" + openshiftObj.Endpoint)
+	requestURL.WriteString("https://" + openshiftObj.Endpoint + ":8443")
 	requestURL.WriteString("/api/v1/namespaces/" + openshiftObj.Namespace + "/secrets")
 
 	var fSelectors strings.Builder
@@ -190,13 +203,32 @@ func runDockerCompose() {
 	}
 }
 
-func getOpenshiftToken() string {
-	args := [3]string{"oc", "whoami", "-t"}
-	out, err := exec.Command(args[0], args[1:3]...).Output()
-	if err != nil {
-		log.Fatalf("cmd.Run() failed with %s\n", err) // need to  show real error message
+func getOpenshiftToken(config openshiftConfig, endpoint string) string {
+	for _, item := range config.Users {
+		if strings.Contains(item.Name, endpoint) {
+			if token, ok := item.User["token"]; ok {
+				return token
+			}
+		}
 	}
-	return strings.TrimSuffix(string(out), "\n")
+	return ""
+}
+
+func getOpenshiftConfig() openshiftConfig {
+	args := [5]string{"oc", "config", "view", "-o", "json"}
+	out, err := exec.Command(args[0], args[1:5]...).Output()
+	if err != nil {
+		log.Fatalf("failed  getting openshift configwith %s\n", err)
+	}
+
+	osConfig := openshiftConfig{}
+
+	jsonErr := json.Unmarshal(out, &osConfig)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+
+	return osConfig
 }
 
 func cmdExists(cmd string) bool {
