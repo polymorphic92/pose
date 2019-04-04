@@ -162,7 +162,7 @@ func buildOpenshiftRequest(openshiftObj openshiftBackend, token string) *http.Re
 
 	var requestURL strings.Builder
 
-	requestURL.WriteString("https://" + openshiftObj.Endpoint + ":8443")
+	requestURL.WriteString("https://" + openshiftObj.Endpoint)
 	requestURL.WriteString("/api/v1/namespaces/" + openshiftObj.Namespace + "/secrets")
 
 	var fSelectors strings.Builder
